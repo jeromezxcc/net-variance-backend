@@ -1,18 +1,16 @@
-from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-import pdfplumber
-import pandas as pd
-import io
-
-app = FastAPI()
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "https://net-variance-frontend.vercel.app",  # (your Vercel frontend URL)
+        "https://net-variance-backend-production.up.railway.app"  # if you want to allow backend to call itself
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.get("/")
 def root():
