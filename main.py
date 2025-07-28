@@ -1,15 +1,8 @@
-from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
-import pdfplumber
-import re
-import io
 
-app = FastAPI()
-
-# Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Optional: restrict to your frontend URL
+    allow_origins=["*"],  # or ["https://net-variance-frontend.vercel.app/upload/"] 
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
