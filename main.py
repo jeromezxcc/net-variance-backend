@@ -1,30 +1,41 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+import pdfplumber
+import re
+import io
 
-app = FastAPI()  # ✅ THIS MUST COME BEFORE anything using "app"
+app = FastAPI()
 
-# ✅ Add CORS to allow frontend to talk to backend
+# Enable CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # or restrict to ["https://net-variance-frontend.vercel.app"]
+    allow_origins=["*"],  # Optional: restrict to your frontend URL
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+@app.get("/")
+def health_check():
+    return {"status": "ok"}
+
 @app.post("/upload")
 async def upload(file: UploadFile = File(...)):
-    # Replace with your logic
-    return {"result": "Processed successfully"}
+    try:
+        contents = await file.read()
+        with pdfplumber.open(io.BytesIO(contents)) as pdf:
+            full_text = ""
+            for page in pdf.pages:
+                full_text += page.extract_text() + "\n"
 
         # Debug: Print PDF contents
         print("=== PDF Contents Start ===")
         print(full_text)
         print("=== PDF Contents End ===")
 
-        # Try to find Net Variance and Net Rate values
-        variance_match = re.search(r"Net Variance\s*=\s*(-?\d+)", full_text)
-        rate_match = re.search(r"Net Rate\s*=\s*(-?\d+)", full_text)
+        # Find Net Variance and Net Rate
+        variance_match = re.search(r"Net Variance\s*=?\s*(-?\d+)", full_text)
+        rate_match = re.search(r"Net Rate\s*=?\s*(-?\d+)", full_text)
 
         if variance_match and rate_match:
             variance = int(variance_match.group(1))
