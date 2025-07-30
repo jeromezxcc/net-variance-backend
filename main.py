@@ -8,6 +8,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ✅ First, define the app
+app = FastAPI()
+
+# ✅ Then add middleware to the app
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  # or ["https://your-frontend.vercel.app"]
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 @app.get("/")
 def health_check():
     return {"status": "ok"}
@@ -21,19 +33,16 @@ async def upload(file: UploadFile = File(...)):
             for page in pdf.pages:
                 full_text += page.extract_text() + "\n"
 
-        # Debug: Print PDF contents
         print("=== PDF Contents Start ===")
         print(full_text)
         print("=== PDF Contents End ===")
 
-        # Find Net Variance and Net Rate
         variance_match = re.search(r"Net Variance\s*=?\s*(-?\d+)", full_text)
         rate_match = re.search(r"Net Rate\s*=?\s*(-?\d+)", full_text)
 
         if variance_match and rate_match:
             variance = int(variance_match.group(1))
             rate = int(rate_match.group(1))
-
             if variance == -rate:
                 return {"result": f"✅ Passed: Net Variance = {variance}, Net Rate = {rate}"}
             else:
@@ -43,3 +52,4 @@ async def upload(file: UploadFile = File(...)):
 
     except Exception as e:
         return {"result": f"❌ Error processing file: {str(e)}"}
+
