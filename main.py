@@ -29,35 +29,39 @@ async def upload(file: UploadFile = File(...)):
         with pdfplumber.open(io.BytesIO(contents)) as pdf:
             for page_number, page in enumerate(pdf.pages):
                 table = page.extract_table()
-print(f"\nPage {page_number + 1}: Table found? {bool(table)}")
+                print(f"\nPage {page_number + 1}: Table found? {bool(table)}")
 
-if not table:
-    print(f"Page {page_number + 1}: No table extracted")
-    continue
+                if not table:
+                    print(f"Page {page_number + 1}: No table extracted")
+                    continue
 
-print(f"Page {page_number + 1}: Table length: {len(table)}")
+                print(f"Page {page_number + 1}: Table length: {len(table)}")
 
-if len(table) < 2:
-    print(f"Page {page_number + 1}: Table too short for header + rows")
-    continue
+                if len(table) < 2:
+                    print(f"Page {page_number + 1}: Table too short for header + rows")
+                    continue
 
-print("Raw table content:", table)
-df = pd.DataFrame(table[1:], columns=table[0])
-print("Extracted columns:", df.columns.tolist())
+                print("Raw table content:", table)
 
+                try:
+                    df = pd.DataFrame(table[1:], columns=table[0])
+                    print("Extracted columns:", df.columns.tolist())
+                except Exception as df_error:
+                    print("Failed to create DataFrame:", df_error)
+                    continue
 
                 if "Net Rate" in df.columns and "Net Variance" in df.columns:
                     for _, row in df.iterrows():
                         try:
                             rate = float(str(row["Net Rate"]).replace(",", "").strip())
-                            variance = float(str(row["Net Variance"]).replace(",", "").replace("−", "-").replace("–", "-").strip())
+                            variance = float(str(row["Net Variance"]).replace(",", "").replace("−", "-").strip())
                             if rate != 0 and variance != -rate:
                                 mismatches.append({
                                     "row": row.to_dict(),
                                     "reason": f"Net Variance ({variance}) ≠ -Net Rate ({rate})"
                                 })
-                        except Exception as e:
-                            print("Error processing row:", e)
+                        except Exception as row_error:
+                            print("Error processing row:", row_error)
                             continue
 
         print("Mismatches found:", mismatches)
@@ -68,4 +72,6 @@ print("Extracted columns:", df.columns.tolist())
         }
 
     except Exception as e:
+        print("❌ Top-level error:", str(e))
         return {"status": "error", "message": str(e)}
+
