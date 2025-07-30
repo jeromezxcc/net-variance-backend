@@ -1,20 +1,16 @@
+from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
+import pdfplumber
+import re
+import io
 
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=["*"],  # or ["https://net-variance-frontend.vercel.app/upload/"] 
-    allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
-)
-
-# ✅ First, define the app
+# ✅ FIRST: define the app
 app = FastAPI()
 
-# ✅ Then add middleware to the app
+# ✅ THEN: apply CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # or ["https://your-frontend.vercel.app"]
+    allow_origins=["*"],  # Or ["https://net-variance-frontend.vercel.app/upload/"]
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -31,8 +27,11 @@ async def upload(file: UploadFile = File(...)):
         with pdfplumber.open(io.BytesIO(contents)) as pdf:
             full_text = ""
             for page in pdf.pages:
-                full_text += page.extract_text() + "\n"
+                text = page.extract_text()
+                if text:
+                    full_text += text + "\n"
 
+        # Debug
         print("=== PDF Contents Start ===")
         print(full_text)
         print("=== PDF Contents End ===")
@@ -43,13 +42,15 @@ async def upload(file: UploadFile = File(...)):
         if variance_match and rate_match:
             variance = int(variance_match.group(1))
             rate = int(rate_match.group(1))
+
             if variance == -rate:
                 return {"result": f"✅ Passed: Net Variance = {variance}, Net Rate = {rate}"}
             else:
                 return {"result": f"⚠️ Failed: Net Variance = {variance}, Net Rate = {rate}"}
         else:
-            return {"result": "❌ Missing values: Could not detect Net Variance or Net Rate in the PDF"}
+            return {"result": "❌ Missing: Net Rate or Net Variance not found in PDF"}
 
     except Exception as e:
-        return {"result": f"❌ Error processing file: {str(e)}"}
+        return {"result": f"❌ Error: {str(e)}"}
+
 
