@@ -33,6 +33,8 @@ async def upload(file: UploadFile = File(...)):
                     continue
 
                 df = pd.DataFrame(table[1:], columns=table[0])
+                print("Extracted columns:", df.columns.tolist())
+                print("Mismatches found:", mismatches)
 
                 # Make sure the expected columns are present
                 if "Net Rate" in df.columns and "Net Variance" in df.columns:
