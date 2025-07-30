@@ -26,33 +26,34 @@ async def upload(file: UploadFile = File(...)):
         contents = await file.read()
         mismatches = []
 
-    with pdfplumber.open(io.BytesIO(contents)) as pdf:
-        for page_number, page in enumerate(pdf.pages):
-            table = page.extract_table()
-            print(f"\nPage {page_number + 1}: Table found? {bool(table)}")
+        with pdfplumber.open(io.BytesIO(contents)) as pdf:
+            for page_number, page in enumerate(pdf.pages):
+                table = page.extract_table()
+                print(f"\nPage {page_number + 1}: Table found? {bool(table)}")
 
-            if not table or len(table) < 2:
-                print(f"Page {page_number + 1}: No usable table")
-                continue
+                if not table or len(table) < 2:
+                    print(f"Page {page_number + 1}: No usable table")
+                    continue
 
-            df = pd.DataFrame(table[1:], columns=table[0])
-            print("Extracted columns:", df.columns.tolist())
+                df = pd.DataFrame(table[1:], columns=table[0])
+                print("Extracted columns:", df.columns.tolist())
 
-            if "Net Rate" in df.columns and "Net Variance" in df.columns:
-                for _, row in df.iterrows():
-                    try:
-                        rate = float(str(row["Net Rate"]).replace(",", "").strip())
-                        variance = float(str(row["Net Variance"]).replace(",", "").replace("−", "-").strip())
-                        if rate != 0 and variance != -rate:
-                            mismatches.append({
-                                "row": row.to_dict(),
-                                "reason": f"Net Variance ({variance}) ≠ -Net Rate ({rate})"
-                            })
-                    except Exception as e:
-                        print("Error processing row:", e)
-                        continue
-                
-        print("Mismatches found:", mismatches)   
+                if "Net Rate" in df.columns and "Net Variance" in df.columns:
+                    for _, row in df.iterrows():
+                        try:
+                            rate = float(str(row["Net Rate"]).replace(",", "").strip())
+                            variance = float(str(row["Net Variance"]).replace(",", "").replace("−", "-").replace("–", "-").strip())
+                            if rate != 0 and variance != -rate:
+                                mismatches.append({
+                                    "row": row.to_dict(),
+                                    "reason": f"Net Variance ({variance}) ≠ -Net Rate ({rate})"
+                                })
+                        except Exception as e:
+                            print("Error processing row:", e)
+                            continue
+
+        print("Mismatches found:", mismatches)
+
         return {
             "status": "ok" if not mismatches else "mismatches",
             "errors": mismatches
