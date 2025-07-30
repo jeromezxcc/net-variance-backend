@@ -36,8 +36,9 @@ async def upload(file: UploadFile = File(...)):
         print(full_text)
         print("=== PDF Contents End ===")
 
-        variance_match = re.search(r"Net Variance\s*=?\s*(-?\d+)", full_text)
-        rate_match = re.search(r"Net Rate\s*=?\s*(-?\d+)", full_text)
+        variance_match = re.search(r"net\s*variance\s*=?\s*(-?\d+)", full_text, re.IGNORECASE)
+        rate_match = re.search(r"net\s*rate\s*=?\s*(-?\d+)", full_text, re.IGNORECASE)
+
 
         if variance_match and rate_match:
             variance = int(variance_match.group(1))
