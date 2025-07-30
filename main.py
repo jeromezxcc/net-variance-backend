@@ -1,7 +1,7 @@
 from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 import pdfplumber
-import re
+import pandas as pd   # ← this is what’s missing
 import io
 
 # ✅ FIRST: define the app
