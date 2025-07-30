@@ -33,6 +33,7 @@ async def upload(file: UploadFile = File(...)):
 
                 if not table or len(table) < 2:
                     print(f"Page {page_number + 1}: No usable table")
+                    print("Raw table content:", table)
                     continue
 
                 df = pd.DataFrame(table[1:], columns=table[0])
