@@ -24,34 +24,34 @@ def health_check():
 async def upload(file: UploadFile = File(...)):
     try:
         contents = await file.read()
+        mismatches = []
+
         with pdfplumber.open(io.BytesIO(contents)) as pdf:
-            full_text = ""
             for page in pdf.pages:
-                text = page.extract_text()
-                if text:
-                    full_text += text + "\n"
+                table = page.extract_table()
+                if not table or len(table) < 2:
+                    continue
 
-        # Debug
-        print("=== PDF Contents Start ===")
-        print(full_text)
-        print("=== PDF Contents End ===")
+                df = pd.DataFrame(table[1:], columns=table[0])
 
-        variance_match = re.search(r"net\s*variance\s*=?\s*(-?\d+)", full_text, re.IGNORECASE)
-        rate_match = re.search(r"net\s*rate\s*=?\s*(-?\d+)", full_text, re.IGNORECASE)
+                # Make sure the expected columns are present
+                if "Net Rate" in df.columns and "Net Variance" in df.columns:
+                    for _, row in df.iterrows():
+                        try:
+                            rate = float(str(row["Net Rate"]).replace(",", "").strip())
+                            variance = float(str(row["Net Variance"]).replace(",", "").replace("−", "-").replace("–", "-").strip())
+                            if rate != 0 and variance != -rate:
+                                mismatches.append({
+                                    "row": row.to_dict(),
+                                    "reason": f"Net Variance ({variance}) ≠ -Net Rate ({rate})"
+                                })
+                        except Exception:
+                            continue
 
-
-        if variance_match and rate_match:
-            variance = int(variance_match.group(1))
-            rate = int(rate_match.group(1))
-
-            if variance == -rate:
-                return {"result": f"✅ Passed: Net Variance = {variance}, Net Rate = {rate}"}
-            else:
-                return {"result": f"⚠️ Failed: Net Variance = {variance}, Net Rate = {rate}"}
-        else:
-            return {"result": "❌ Missing: Net Rate or Net Variance not found in PDF"}
+        return {
+            "status": "ok" if not mismatches else "mismatches",
+            "errors": mismatches
+        }
 
     except Exception as e:
-        return {"result": f"❌ Error: {str(e)}"}
-
-
+        return {"status": "error", "message": str(e)}
