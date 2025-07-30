@@ -29,15 +29,22 @@ async def upload(file: UploadFile = File(...)):
         with pdfplumber.open(io.BytesIO(contents)) as pdf:
             for page_number, page in enumerate(pdf.pages):
                 table = page.extract_table()
-                print(f"\nPage {page_number + 1}: Table found? {bool(table)}")
+print(f"\nPage {page_number + 1}: Table found? {bool(table)}")
 
-                if not table or len(table) < 2:
-                    print(f"Page {page_number + 1}: No usable table")
-                    print("Raw table content:", table)
-                    continue
+if not table:
+    print(f"Page {page_number + 1}: No table extracted")
+    continue
 
-                df = pd.DataFrame(table[1:], columns=table[0])
-                print("Extracted columns:", df.columns.tolist())
+print(f"Page {page_number + 1}: Table length: {len(table)}")
+
+if len(table) < 2:
+    print(f"Page {page_number + 1}: Table too short for header + rows")
+    continue
+
+print("Raw table content:", table)
+df = pd.DataFrame(table[1:], columns=table[0])
+print("Extracted columns:", df.columns.tolist())
+
 
                 if "Net Rate" in df.columns and "Net Variance" in df.columns:
                     for _, row in df.iterrows():
