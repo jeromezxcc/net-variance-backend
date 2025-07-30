@@ -47,7 +47,8 @@ async def upload(file: UploadFile = File(...)):
                                 })
                         except Exception:
                             continue
-
+                            
+        print("Mismatches found:", mismatches)   
         return {
             "status": "ok" if not mismatches else "mismatches",
             "errors": mismatches
